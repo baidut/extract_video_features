@@ -52,7 +52,7 @@ def get_vid_length(vid_file):
     frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     if fps is 0 or fps > 120 or \
         frameCount == 0 or frameWidth == 0 or frameHeight == 0:
-        print(f'Corrupted: {vid_file} ({frameWidth}x{frameHeight}) frameCount={frameCount}, ')
+        print(f'Not found (wrong path) or corrupted: {vid_file} ({frameWidth}x{frameHeight}) frameCount={frameCount}, ')
         # f.rename(Path('Corrupted') / f.name) # mkdir
         return -1
     cap.release()
