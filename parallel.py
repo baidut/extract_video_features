@@ -3,12 +3,17 @@ from tqdm import tqdm
 from functools import partial
 
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 # from multiprocessing.pool import ThreadPool as Pool
 
 # import time
 import random
 
 """LOG
+from multiprocessing import Pool; Pool.__name__
+from multiprocessing.pool import ThreadPool; ThreadPool.__name__
+
+
 * add parital support, *args and **kwargs
 
 # %%
@@ -58,18 +63,19 @@ def try_func(func, x, *args, **kwargs):
 
 # update tqdm
 def par(func, items, num_pool=None,
-        unordered=False, *args, **kwargs):
+        unordered=False, thread=False, *args, **kwargs):
     if num_pool == None:
         num_pool = multiprocessing.cpu_count()
 
     status = 'enabled' if num_pool >=1 else 'disabled'
-    print(f'Parallel is {status}: num_pool = {num_pool}\n')
+    pool_type = ThreadPool if thread else Pool
+    print(f'Parallel is {status}: pool_type = {pool_type.__name__}, num_pool = {num_pool}\n')
 
     warp_func = partial(try_func, func, *args, **kwargs)
     max_ = len(items)
 
     if num_pool > 1:
-        with Pool(num_pool) as p:
+        with pool_type(num_pool) as p:
             if unordered:
                 items_ = p.imap_unordered(warp_func, items)
             else:

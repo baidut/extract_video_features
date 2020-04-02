@@ -110,9 +110,10 @@ def test_vid(file, out_dir, duration):
 @click.option('--duration', default=5, help="The duration of the cropped video (in seconds). "
 "ffmpeg will start decoding at a random position and stop decoding after [duration] seconds. "
 "Note the cropped video file will be slightly longer than the duration.")
+@click.option('--thread/--no-thread', default=True)
 @click.option('--num_pool', '-p', default=6, type=int, help="num of processes in parallel")
 @click.argument('in_dir')
-def extract_dir(in_dir, out_dir, duration, num_pool):
+def extract_dir(in_dir, out_dir, duration, thread, num_pool):
     """For each video under input directory [in_dir], the program will output
     the feature values to a ".json" file with the same filename under the output directory [out_dir]."""
     # get video files
@@ -120,7 +121,7 @@ def extract_dir(in_dir, out_dir, duration, num_pool):
         '.mkv', '.yuv', '.m4v', '.m4p', '.vob', '.ogv', '.ogg', '.rm', '.mpg', \
         '.mpeg', '.3gp', '.3g2', '.ts', '.asf'
     files = np.array([f for f in Path(in_dir).rglob('*.*') if f.name.lower().endswith(VIDEO_EXTS)])
-    a = par(extract_features, files, num_pool, unordered=True, out_dir=out_dir, duration=duration)
+    a = par(extract_features, files, num_pool, thread=thread, unordered=True, out_dir=out_dir, duration=duration)
 
 @cli.command()
 @click.option('--num_pool', '-p', default=6, type=int)
