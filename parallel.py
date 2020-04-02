@@ -1,99 +1,93 @@
-# from multiprocessing.pool import ThreadPool as Pool
 import multiprocessing
 from tqdm import tqdm
-from multiprocessing import Pool
-# from joblib import Parallel, delayed
-
-# LOG = tqdm(total=0, position=1, bar_format='{desc}')
-
 from functools import partial
-# https://stackoverflow.com/questions/4827432/how-to-let-pool-map-take-a-lambda-function
 
-# def try_func(x, func, log_bar, msg_func, err_func, ok_func):
-#     # file_log_bar.set_description_str(msg_func(x))
-#     try:
-#         if ok_func is None:
-#             return func(x, log_bar=log_bar)
-#         else:
-#             return ok_func(func(x, log_bar=log_bar))
-#
-#     except Exception as e:
-#         if err_func is None:
-#             print(x)
-#             raise e
-#         else:
-#             return err_func(x, e)
+from multiprocessing import Pool
+# from multiprocessing.pool import ThreadPool as Pool
 
-def try_func(func, x, log_bar):
+# import time
+import random
+
+"""
+# %%
+a = 2, 4,
+
+a[2]
+
+
+# %%
+import ast
+import numpy as np
+df = pd.read_csv('D:/cmder/results.csv')
+s=df.iloc[0]['f_brightness']
+s
+ast.literal_eval(s)
+df['f_x']
+s = df.iloc[0]['f_x'];ast.literal_eval(s)
+s = df.iloc[0]['f_t'];ast.literal_eval(s)
+
+# %%
+"""
+
+def try_func(func, x):
     try:
-        func(x, log_bar=log_bar)
-        return True
+        # choice = random.choice([0,1,2])
+        # if choice == 0:
+        #     raise NotImplementedError("NotImplemented!")
+        # elif choice == 1:
+        #     raise ValueError("Value!")
+        #pbar.write(f'\r\n{x}')
+        return x, func(x) # if no return value, it will return x, None
+
     except Exception as e:
-        raise e
-        return False
+        # pbar = tqdm(total=0, position=0, bar_format='{desc}')
+        print_msg = lambda msg: tqdm.write(f'\nERROR[ {x} ]: {msg}')
+
+        if hasattr(e, 'message'):
+            print_msg(e.message)
+        else:
+            print_msg(e)
+        return None, {}
+
+        """
+        import pandas as pd; pd.DataFrame([{'a':1, 'b':2}, {'a':1, 'b':2}, {}])
+        import pandas as pd; pd.DataFrame.from_dict([[1,2,3],[1,2,3] , [], {}])
+        """
 
 # update tqdm
-def par(items, func, num_pool,
-        unordered=False,
-        err_func=lambda x, e: 0,
-        ok_func=lambda x: 1, # Use 0/1 instead of False/True: TypeError: cannot unpack non-iterable bool object
-        msg_func=lambda x: str(x)):
-    # def processInput(x):
-    #     # sys.stdout = open(os.devnull, 'w')
-    #     # warnings.filterwarnings("ignore")
-    #     try:
-    #         func(x)
-    #         return 1
-    #     except Exception as e:
-    #         print(e)
-    #         err_func(x)
-    #         return 0
-    #
+def par(func, items, num_pool=None,
+        unordered=False):
+    if num_pool == None:
+        num_pool = multiprocessing.cpu_count()
 
     status = 'enabled' if num_pool >=1 else 'disabled'
-    print(f'Parallel is {status}: num_pool = {num_pool}')
+    print(f'Parallel is {status}: num_pool = {num_pool}\n')
 
-    log_bar = tqdm(total=0, position=1, bar_format='{desc}')
-    # warp_func = partial(try_func, func, None, msg_func, err_func, ok_func)
-    warp_func = partial(try_func, func, log_bar=log_bar)
+    warp_func = partial(try_func, func)
+    max_ = len(items)
 
-    if num_pool >= 1:
-        if num_pool == 1:
-            num_pool = multiprocessing.cpu_count()
+    if num_pool > 1:
+        with Pool(num_pool) as p:
+            if unordered:
+                items_ = p.imap_unordered(warp_func, items)
+            else:
+                items_ = p.imap(warp_func, items)
+            pbar = tqdm(items_, total=max_)
+            res = []
+            for x, y in pbar:
+                pbar.set_description(str(x))
+                if y is not {}:
+                    res.append(y)
 
-        if unordered:
-            # current file information?
-            # don't support lambda or local functions
-            # r = list(tqdm(ximap_unordered(func, items, processes=num_pool)))
-            # r = list(tqdm(p.map(func, items)))
-            with Pool(num_pool) as p:
-                r = list(tqdm(p.imap_unordered(warp_func, items)))
-        else:
-            raise NotImplementedError
-            #r = list(tqdm(ximap(func, items, processes=num_pool)))
-
-        # a = Parallel(n_jobs=num_pool)(delayed(processInput)(i) for i in pbar)
-
-        # num_cpu = multiprocessing.cpu_count()
-        # num_pool = min(num_pool, num_cpu)
-        # print(f'num_cpu={num_cpu}, num_pool={num_pool}')
-        # with Pool(num_pool) as p:  # restrict pool num to max core number
-        #     # with tqdm(total=)
-        #     results = t.map(func, items) # results = [[ret,num], [ret, num], ...]
-        # t.close()
-        # t.join()
-        # pbar = tqdm(results)
-        # for res in pbar:
-        #     pbar.set_description(msg_func(res))
-
-        # TODO: num_pool separated bars for each process
     else:
-        pbar = tqdm(items)
-        r = [warp_func(x) for x in pbar]
-
-    return r #np.array(a)
-
-
-"""
-AttributeError: Can't pickle local object 'par.<locals>.
-"""
+        pbar = tqdm(items, total=max_) # , position=2
+        res = []
+        for t in pbar:
+            # time.sleep(random.uniform(0, 3))
+            pbar.set_description(str(t))
+            x, y = warp_func(t)
+            if y is not {}:
+                res.append(y)
+    # summary
+    print(f'{len(res)} out of {max_} succeeded.')
+    return res
