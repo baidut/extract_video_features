@@ -31,8 +31,6 @@ import json
 from parallel import * # run in parallel
 from vid_proc import rand_crop_vid, get_vid_feats
 
-from tqdm import tqdm
-from functools import partial
 
 # %%
 from pathlib import Path
@@ -122,9 +120,7 @@ def extract_dir(in_dir, out_dir, duration, num_pool):
         '.mkv', '.yuv', '.m4v', '.m4p', '.vob', '.ogv', '.ogg', '.rm', '.mpg', \
         '.mpeg', '.3gp', '.3g2', '.ts', '.asf'
     files = np.array([f for f in Path(in_dir).rglob('*.*') if f.name.lower().endswith(VIDEO_EXTS)])
-
-    func = partial(extract_features, out_dir=out_dir, duration=duration)
-    a = par(func, files, num_pool, unordered=True)
+    a = par(extract_features, files, num_pool, unordered=True, out_dir=out_dir, duration=duration)
 
 @cli.command()
 @click.option('--num_pool', '-p', default=6, type=int)
