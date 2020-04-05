@@ -36,7 +36,8 @@ from vid_proc import rand_crop_vid, get_vid_feats
 from pathlib import Path
 
 
-def extract_features(vid_file, out_dir, duration, skip_exist=True):
+def extract_features(vid_file, out_dir, duration=None, skip_exist=True):
+    """if duration is None, skip cropping"""
     #global PBAR
     print_msg = lambda x: x # print(x) # PBAR.set_description_str(str(x))
     """
@@ -54,10 +55,14 @@ def extract_features(vid_file, out_dir, duration, skip_exist=True):
         print_msg(f'Skipped existed: {vid_file}')
     else:
         print_msg(f'Cropping {vid_file}...')
-        cropped_file = rand_crop_vid(vid_file, out_dir, duration)
-        print_msg(f'Computing features {vid_file}...')
-        feats = get_vid_feats(cropped_file)
-        cropped_file.unlink() # delete the cropped_file
+        if duration is not None:
+            cropped_file = rand_crop_vid(vid_file, out_dir, duration)
+            print_msg(f'Computing features {vid_file}...')
+            feats = get_vid_feats(cropped_file)
+            cropped_file.unlink() # delete the cropped_file
+        else:
+            feats = get_vid_feats(vid_file)
+
         with open(result_file, 'w') as json_file:
             json.dump(feats, json_file)
 
@@ -129,7 +134,7 @@ def extract_dir(in_dir, out_dir, duration, thread, num_pool):
 @click.argument('json_dir')
 def join_results(json_dir, csv_file, num_pool):
     """Merge the json files under [json_dir] to a CSV file [csv_file]"""
-    files = np.array([f for f in Path(json_dir).rglob('*.*') if f.name.lower().endswith('.json')])
+    files = np.array([f for f in Path(json_dir).rglob('*.json')])
     print(f'{len(files)} files to be joined' )
     df = pd.DataFrame(par(load_features, files, num_pool, unordered=True))
     df.to_csv(csv_file, index=False)

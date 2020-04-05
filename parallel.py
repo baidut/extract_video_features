@@ -1,10 +1,15 @@
 import multiprocessing
-from tqdm import tqdm
+
+# pip install tqdm -U
+# autonotebook
+from tqdm.autonotebook import tqdm #  https://stackoverflow.com/questions/42212810/tqdm-in-jupyter-notebook-prints-new-progress-bars-repeatedly
+
 from functools import partial
 
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 # from multiprocessing.pool import ThreadPool as Pool
+# https://github.com/baidut/VQA-DB/issues/58
 
 # import time
 import random
@@ -64,12 +69,17 @@ def try_func(func, x, *args, **kwargs):
 # update tqdm
 def par(func, items, num_pool=None,
         unordered=False, thread=False, *args, **kwargs):
+    num_cpu = multiprocessing.cpu_count()
+
     if num_pool == None:
-        num_pool = multiprocessing.cpu_count()
+        num_pool = num_cpu-1 if thread is False else 100
+
+    if thread is False: # multiprocessing
+        assert num_pool <= num_cpu, 'For multiprocessing, n_process <= n_cores otherwise processes will compete for CPUs'
 
     status = 'enabled' if num_pool >=1 else 'disabled'
     pool_type = ThreadPool if thread else Pool
-    print(f'Parallel is {status}: pool_type = {pool_type.__name__}, num_pool = {num_pool}\n')
+    print(f'Parallel is {status}: pool_type = {pool_type.__name__}, num_pool = {num_pool}, num_cpu = {num_cpu}\n')
 
     warp_func = partial(try_func, func, *args, **kwargs)
     max_ = len(items)
@@ -83,7 +93,7 @@ def par(func, items, num_pool=None,
             pbar = tqdm(items_, total=max_)
             res = []
             for x, y in pbar:
-                pbar.set_description(str(x))
+                pbar.set_description_str(f'{x[:20]:<20}')
                 if y is not {}:
                     res.append(y)
 
@@ -92,7 +102,7 @@ def par(func, items, num_pool=None,
         res = []
         for t in pbar:
             # time.sleep(random.uniform(0, 3))
-            pbar.set_description(str(t))
+            pbar.set_description_str(f'{t[:20]:<20}') # set_postfix_str
             x, y = warp_func(t)
             if y is not {}:
                 res.append(y)
