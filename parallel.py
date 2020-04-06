@@ -2,7 +2,8 @@ import multiprocessing
 
 # pip install tqdm -U
 # autonotebook
-from tqdm.autonotebook import tqdm #  https://stackoverflow.com/questions/42212810/tqdm-in-jupyter-notebook-prints-new-progress-bars-repeatedly
+#from tqdm.autonotebook import tqdm #  https://stackoverflow.com/questions/42212810/tqdm-in-jupyter-notebook-prints-new-progress-bars-repeatedly
+from tqdm import tqdm
 
 from functools import partial
 
@@ -67,6 +68,13 @@ def try_func(func, x, *args, **kwargs):
         """
 
 # update tqdm
+"""
+# %%
+from parallel import *
+
+par(print, list(range(5)), num_pool=0)
+# %%
+"""
 def par(func, items, num_pool=None,
         unordered=False, thread=False, *args, **kwargs):
     num_cpu = multiprocessing.cpu_count()
@@ -93,7 +101,7 @@ def par(func, items, num_pool=None,
             pbar = tqdm(items_, total=max_)
             res = []
             for x, y in pbar:
-                pbar.set_description_str(f'{x[:20]:<20}')
+                pbar.set_description_str(f'{str(x)[:20]:<20}')
                 if y is not {}:
                     res.append(y)
 
@@ -102,7 +110,7 @@ def par(func, items, num_pool=None,
         res = []
         for t in pbar:
             # time.sleep(random.uniform(0, 3))
-            pbar.set_description_str(f'{t[:20]:<20}') # set_postfix_str
+            pbar.set_description_str(f'{str(t)[:20]:<20}') # set_postfix_str
             x, y = warp_func(t)
             if y is not {}:
                 res.append(y)
